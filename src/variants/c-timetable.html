@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>训练时刻表</title>
+<style>
+/* C · 时刻表: every 增肌 template on one screen, set like a timetable: one row per slot, one column per
+   session, solid verdict blocks. Click a block → the detail column shows every set as a bar. */
+:root {
+  --ground: #ffffff; --ink: #0e1116; --ink2: #5a6270; --step: #f1f3f6; --rule: #e3e6eb;
+  --up2: #0b7a55; --up1: #7cc9a6; --flat: #c9ced6; --down: #d6453a; --warn: #e3a21a; --sel: #1f4fd8;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #0f1216; --ink: #e9edf2; --ink2: #9aa3b0; --step: #181c22; --rule: #262c34;
+  --up2: #33c48e; --up1: #1f6b50; --flat: #3a414c; --down: #ff6e62; --warn: #f0b440; --sel: #7aa2ff; color-scheme: dark; } }
+:root[data-theme="dark"] { --ground: #0f1216; --ink: #e9edf2; --ink2: #9aa3b0; --step: #181c22; --rule: #262c34;
+  --up2: #33c48e; --up1: #1f6b50; --flat: #3a414c; --down: #ff6e62; --warn: #f0b440; --sel: #7aa2ff; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 14px/1.5 var(--sans); }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  padding: 20px clamp(16px, 3vw, 40px); background: var(--step); }
+header h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+header .k { display: flex; gap: 14px; flex-wrap: wrap; color: var(--ink2); font-size: 13px; }
+header .k span::before { content: ""; display: inline-block; width: 14px; height: 10px; margin-right: 5px; background: var(--c); vertical-align: 0; }
+.wrap { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; padding: 28px clamp(16px, 3vw, 40px) 64px; }
+.tpl { margin-bottom: 28px; }
+.tpl h2 { font-size: 15px; margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; }
+.tpl h2 span { color: var(--ink2); font-weight: 400; font-size: 13px; }
+.grid { display: grid; grid-template-columns: minmax(7em, 13em) repeat(var(--n), minmax(44px, 72px)); gap: 3px; align-items: stretch; font-variant-numeric: tabular-nums; }
+.grid .h { color: var(--ink2); font-size: 12px; padding: 0 0 2px; }
+.grid .nm { padding: 6px 8px 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grid .nm b { color: var(--ink2); font-weight: 400; margin-right: 6px; }
+.grid button { all: unset; cursor: pointer; text-align: center; font-size: 12px; padding: 6px 2px; border-radius: 2px; background: var(--step); color: var(--ink); }
+.grid button.weight { background: var(--up2); color: #fff; } .grid button.reps { background: var(--up1); }
+.grid button.same { background: var(--flat); } .grid button.down { background: var(--down); color: #fff; }
+.grid button.watch, .grid button.unit { background: var(--warn); }
+.grid button[aria-pressed="true"] { outline: 2px solid var(--sel); outline-offset: 1px; }
+.grid button:focus-visible { outline: 2px solid var(--sel); }
+.detail { position: sticky; top: 16px; align-self: start; }
+.detail h3 { font-size: 22px; line-height: 1.2; letter-spacing: -0.01em; margin: 0; }
+.detail .s { color: var(--ink2); margin: 6px 0 20px; }
+.bar { display: grid; grid-template-columns: 5.5em 1fr 3.5em; gap: 8px; align-items: center; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.bar i { display: block; height: 14px; background: var(--ink); border-radius: 1px; }
+.bar.warm i { background: var(--flat); } .bar .r { text-align: right; white-space: nowrap; }
+.detail .v { margin-top: 18px; font-size: 16px; font-weight: 600; }
+.detail .note { color: var(--ink2); margin-top: 4px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } .detail { position: static; } }
+</style>
+</head>
+<body>
+<header><h1>训练进步 · 增肌计划</h1>
+  <div class="k"><span style="--c:var(--up2)">涨重量</span><span style="--c:var(--up1)">涨次数</span><span style="--c:var(--flat)">持平</span><span style="--c:var(--down)">退步</span><span style="--c:var(--warn)">待观察</span><span style="--c:var(--step)">首次 / 换动作</span></div>
+</header>
+<div class="wrap"><div id="grids"></div><aside class="detail" id="detail"></aside></div>
+<script>/*__DATA__*/</script>
+<script>/*__COMMON__*/</script>
+<script>
+(() => {
+  let sel = null;
+  const plan = D.templates.filter(t => t.plan);
+  function show(tpl, d, m, btn) {
+    document.querySelectorAll('.grid button[aria-pressed="true"]').forEach(b => b.setAttribute('aria-pressed', false));
+    btn.setAttribute('aria-pressed', true);
+    const box = $('detail'); box.textContent = '';
+    box.append(el('h3', null, m.name), el('div', 's', `${tpl} · 第 ${m.pos} 个 · ${d.date}`));
+    const max = Math.max(...m.sets.map(s => s[1]));
+    for (const s of m.sets) {
+      const r = el('div', 'bar' + (s[2] === '热' ? ' warm' : '')); const i = el('i'); i.style.width = (s[1] / max * 100) + '%';
+      const wrap = el('div'); wrap.append(i);
+      r.append(el('span', null, `${s[0] > 0 ? wv(s[0], m.unit) : '自重'} ${s[0] > 0 ? unitTxt(m) : ''}`), wrap, el('span', 'r', `${s[1]} 次`)); box.append(r);
+    }
+    box.append(el('div', 'v', `${VL[m.verdict]} ${deltaTxt(m, prevOf(tpl, d.date, m))}`.trim()), el('div', 'note', m.sets.some(s => s[2] === '热') ? '灰色是热身组,不参与比较。' : ''));
+    if (m.add_weight) box.append(el('div', 'note', m.assist ? '下次可以减一档辅助。' : `最佳组超过 ${m.rm} 次或两组做满,下次可以加重。`));
+  }
+  for (const t of plan) {
+    const sess = sessionsOf(t.name).slice(-8), slots = slotsOf(sess);
+    const sec = el('section', 'tpl'), h = el('h2', null, t.name); h.append(el('span', null, `练了 ${t.sessions} 次,最近 ${md(t.last_date)}`));
+    const g = el('div', 'grid'); g.style.setProperty('--n', sess.length);
+    g.append(el('div', 'h', '')); sess.forEach(d => g.append(el('div', 'h', md(d.date))));
+    for (const [p, ref] of slots) {
+      const nm = el('div', 'nm'); nm.append(el('b', null, p), ref.name); g.append(nm);
+      for (const d of sess) {
+        const m = d.moves.find(x => x.pos === p);
+        if (!m) { g.append(el('div')); continue; }
+        const b = el('button', m.verdict, `${m.best[0] > 0 ? wv(m.best[0], m.unit) : '自重'}×${m.best[1]}`);
+        b.setAttribute('aria-pressed', false); b.title = `${m.name} ${VL[m.verdict]}`;
+        b.onclick = () => show(t.name, d, m, b); g.append(b);
+        if (!sel && d === last) sel = [t.name, d, m, b];
+      }
+    }
+    sec.append(h, g); $('grids').append(sec);
+  }
+  if (!sel) { const b = document.querySelector('.grid button'); b.click(); } else show(...sel);
+})();
+</script>
+</body>
+</html>

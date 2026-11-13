@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>训练比分板</title>
+<style>
+/* B · 比分板: template rail on the left, the main area is "last time vs this time" for one template,
+   the change column set huge like a scoreboard. Dark by default (read in the gym, between sets). */
+:root {
+  --ground: #0c0d0c; --rail: #151715; --ink: #f1f2ee; --ink2: #9ba19c; --step: #1d201d;
+  --accent: #ff8a1f; --up: #3ddc84; --down: #ff5c4d; --flat: #7d837e;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --ground: #f2f2ef; --rail: #e6e7e3; --ink: #111311; --ink2: #555b56; --step: #e9eae6; --accent: #c85f00; --up: #0f8a4b; --down: #c8352a; --flat: #6c726d; color-scheme: light; } }
+:root[data-theme="light"] { --ground: #f2f2ef; --rail: #e6e7e3; --ink: #111311; --ink2: #555b56; --step: #e9eae6; --accent: #c85f00; --up: #0f8a4b; --down: #c8352a; --flat: #6c726d; color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.5 var(--sans); }
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+aside { background: var(--rail); padding: 28px 12px; }
+aside h1 { font-size: 17px; margin: 0 12px 20px; letter-spacing: -0.01em; }
+aside button { all: unset; display: grid; grid-template-columns: 1fr auto; width: 100%; box-sizing: border-box; padding: 10px 12px; cursor: pointer; border-radius: 6px; }
+aside button .d { color: var(--ink2); font-size: 13px; font-variant-numeric: tabular-nums; }
+aside button[aria-current="true"] { background: var(--ground); }
+aside button[aria-current="true"] .t { color: var(--accent); font-weight: 600; }
+aside button:focus-visible { outline: 2px solid var(--accent); }
+aside .old { color: var(--ink2); font-size: 13px; margin: 24px 12px 6px; }
+main { padding: 36px clamp(16px, 4vw, 56px) 64px; min-width: 0; }
+.head h2 { font-size: 44px; line-height: 1; letter-spacing: -0.03em; margin: 0; }
+.head p { color: var(--ink2); margin: 10px 0 0; font-size: 16px; }
+.score { margin-top: 36px; width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.score th { text-align: right; color: var(--ink2); font-weight: 500; font-size: 13px; padding: 0 12px 10px; }
+.score th:first-child { text-align: left; }
+.score td { padding: 16px 12px; text-align: right; background: var(--step); white-space: nowrap; }
+.score tr + tr td { border-top: 6px solid var(--ground); }
+.score td:first-child { text-align: left; white-space: normal; }
+.score .n { font-size: 17px; font-weight: 600; } .score .p { color: var(--ink2); font-size: 13px; }
+.score td.sets { text-align: left; white-space: normal; }
+.line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+.line .lb { color: var(--ink2); font-size: 13px; width: 2.6em; flex: none; }
+.line .r { margin-left: 8px; }
+.line.was { color: var(--ink2); font-size: 15px; margin-bottom: 4px; }
+.line.now { font-size: 21px; font-weight: 600; }
+.line .u { color: var(--ink2); font-size: 13px; font-weight: 400; }
+.line .r.up, .line .w.up { color: var(--up); } .line .r.down, .line .w.down { color: var(--down); }
+.score .chg { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; min-width: 4.5em; }
+.score .chg small { display: block; font-size: 13px; font-weight: 500; letter-spacing: 0; }
+.up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--flat); }
+.hint { color: var(--accent); font-size: 13px; font-weight: 600; }
+.strip { margin-top: 56px; }
+.strip h3 { font-size: 18px; margin: 0 0 14px; }
+.strip .row { display: grid; grid-template-columns: 4.5em 1fr; gap: 12px; align-items: center; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.strip .row .d { color: var(--ink2); font-size: 13px; }
+.strip .cells { display: flex; gap: 4px; }
+.strip .cells i { flex: 1; height: 26px; border-radius: 3px; background: var(--step); }
+@media (max-width: 720px) {
+  .app { grid-template-columns: 1fr; }
+  aside { padding: 16px; display: flex; gap: 6px; overflow-x: auto; } aside h1, aside .old { display: none; }
+  aside button { width: auto; white-space: nowrap; grid-template-columns: auto; } aside button .d { display: none; }
+  .head h2 { font-size: 32px; } .score .chg { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside><h1>训练进步</h1><div id="rail"></div></aside>
+  <main>
+    <div class="head"><h2 id="title"></h2><p id="sub"></p></div>
+    <table class="score"><thead><tr><th>动作</th><th style="text-align:left">每组 重量 × 次数</th><th>变化</th></tr></thead><tbody id="rows"></tbody></table>
+    <section class="strip"><h3>这个模板每次的结果</h3><div id="strip"></div></section>
+  </main>
+</div>
+<script>/*__DATA__*/</script>
+<script>/*__COMMON__*/</script>
+<script>
+(() => {
+  const cls = (v) => UP.includes(v) ? 'up' : v === 'down' ? 'down' : 'flat';
+  const fill = (v) => UP.includes(v) ? 'var(--up)' : v === 'down' ? 'var(--down)' : v === 'same' ? 'var(--flat)' : 'transparent';
+  let tpl = last.template;
+  const rail = $('rail');
+  D.templates.forEach((t, i) => {
+    if (!t.plan && (i === 0 || D.templates[i - 1].plan)) rail.append(el('div', 'old', '之前的计划'));
+    const b = el('button'); b.append(el('span', 't', t.name), el('span', 'd', md(t.last_date)));
+    b.onclick = () => { tpl = t.name; draw(); }; b.dataset.t = t.name; rail.append(b);
+  });
+  const near = (a, b) => Math.abs(a - b) <= 0.01 * Math.max(a, b, 1);
+  // all working sets, consecutive same weight grouped: "50 × 12 12 11 10"; reps at the best weight coloured vs last time
+  function line(label, m, ref, cls) {
+    const row = el('div', 'line ' + cls); row.append(el('span', 'lb', label));
+    const work = m.sets.filter(s => s[2] !== '热'), groups = [];
+    for (const s of work) { const g = groups[groups.length - 1]; if (g && near(g.lbs, s[0])) g.r.push(s[1]); else groups.push({ lbs: s[0], r: [s[1]] }); }
+    const sameBest = ref && near(m.best[0], ref.best[0]);
+    const refReps = ref ? ref.sets.filter(s => s[2] !== '热' && near(s[0], ref.best[0])).map(s => s[1]) : [];
+    let k = 0;
+    for (const g of groups) {
+      const isBest = near(g.lbs, m.best[0]), grp = el('span');
+      const w = el('span', 'w', g.lbs > 0 ? `${m.assist ? '辅助 ' : ''}${wv(g.lbs, m.unit)} ×` : '自重 ×');
+      if (ref && !sameBest && isBest) w.classList.add(UP.includes(m.verdict) ? 'up' : m.verdict === 'down' ? 'down' : 'x');
+      grp.append(w);
+      for (const r of g.r) {
+        const e = el('span', 'r', r);
+        if (sameBest && isBest) { const p = refReps[k++]; if (p == null || r > p) e.classList.add('up'); else if (r < p) e.classList.add('down'); }
+        grp.append(e);
+      }
+      row.append(grp);
+    }
+    if (cls === 'now') row.append(el('span', 'u', unitTxt(m)));
+    return row;
+  }
+  function draw() {
+    rail.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', b.dataset.t === tpl));
+    const sess = sessionsOf(tpl), cur = sess[sess.length - 1], c = tally(cur.moves);
+    const ups = (c.weight || 0) + (c.reps || 0);
+    $('title').textContent = `${tpl} · ${md(cur.date)}`;
+    $('sub').textContent = `${cur.moves.length} 个动作:${ups} 个进步,${c.same || 0} 个持平,${c.down || 0} 个退步` + ((c.first || 0) + (c.swap || 0) ? `,${(c.first || 0) + (c.swap || 0)} 个没法比(首次或换了动作)` : '') + '。';
+    const tb = $('rows'); tb.textContent = '';
+    for (const m of cur.moves) {
+      const prev = prevOf(tpl, cur.date, m), tr = el('tr');
+      const ex = el('td'); ex.append(el('div', 'p', `第 ${m.pos} 个`), el('div', 'n', m.name));
+      if (m.add_weight) ex.append(el('div', 'hint', m.assist ? '下次可以减辅助' : '下次可以加重'));
+      if (m.stall) ex.append(el('div', 'hint', '连续 3 次没进步'));
+      const chg = el('td', 'chg ' + cls(m.verdict)); chg.append(deltaTxt(m, prev) || '—', el('small', null, VL[m.verdict]));
+      const sets = el('td', 'sets'); if (prev) sets.append(line('上次', prev, null, 'was')); sets.append(line('这次', m, prev, 'now'));
+      tr.append(ex, sets, chg);
+      tb.append(tr);
+    }
+    const st = $('strip'); st.textContent = '';
+    for (const d of sess.slice(-8).reverse()) {
+      const r = el('div', 'row'), cells = el('div', 'cells');
+      r.append(el('span', 'd', md(d.date)));
+      for (const m of d.moves) { const i = el('i'); i.style.background = fill(m.verdict); if (!fill(m.verdict).startsWith('var')) i.style.outline = '1px dashed var(--flat)'; i.title = `第 ${m.pos} 个 ${m.name}:${VL[m.verdict]}`; cells.append(i); }
+      r.append(cells); st.append(r);
+    }
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

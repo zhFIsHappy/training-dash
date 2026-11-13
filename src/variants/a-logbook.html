@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>训练记录本</title>
+<style>
+/* A · 记录本: one light sheet, template tabs on top, the slot × session table is the whole page.
+   Verdicts are cell fills (no dots, pills, borders or shadows). */
+:root {
+  --ground: #f3f4f2; --sheet: #ffffff; --ink: #141614; --ink2: #4d544f; --rule: #dfe2de;
+  --accent: #0f6b45;
+  --f-weight: #bfe3cc; --f-reps: #e2f2e7; --f-same: #eceeeb; --f-down: #f6d3cd; --f-warn: #f4e3b8;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #101211; --sheet: #171a18; --ink: #ecefec; --ink2: #a9b1ab; --rule: #2a2f2c; --accent: #5fd39b;
+  --f-weight: #1f5a3c; --f-reps: #1c3a2a; --f-same: #232725; --f-down: #5a2621; --f-warn: #4f4020; color-scheme: dark; } }
+:root[data-theme="dark"] { --ground: #101211; --sheet: #171a18; --ink: #ecefec; --ink2: #a9b1ab; --rule: #2a2f2c; --accent: #5fd39b;
+  --f-weight: #1f5a3c; --f-reps: #1c3a2a; --f-same: #232725; --f-down: #5a2621; --f-warn: #4f4020; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.55 var(--sans); }
+::selection { background: var(--f-weight); }
+.page { max-width: 1080px; margin: 0 auto; padding: 40px max(16px, env(safe-area-inset-left)) 64px; }
+h1 { font-size: 40px; line-height: 1.05; letter-spacing: -0.03em; margin: 0; font-weight: 700; }
+.lede { font-size: 20px; line-height: 1.45; margin: 14px 0 0; max-width: 34em; }
+.lede b { font-weight: 600; }
+.meta { color: var(--ink2); font-size: 13px; margin-top: 10px; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; margin: 40px 0 0; }
+nav button { all: unset; cursor: pointer; padding: 8px 14px; font-size: 15px; color: var(--ink2); border-radius: 999px; }
+nav button[aria-selected="true"] { background: var(--ink); color: var(--sheet); }
+nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sheet { background: var(--sheet); margin-top: 16px; padding: 8px 0 0; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 500; color: var(--ink2); font-size: 13px; padding: 12px 16px; white-space: nowrap; }
+td { padding: 0; border-top: 1px solid var(--rule); vertical-align: stretch; }
+td.ex { padding: 14px 16px; min-width: 11em; position: sticky; left: 0; background: var(--sheet); }
+td.ex .n { font-weight: 600; } td.ex .p { color: var(--ink2); font-size: 13px; }
+.c { padding: 14px 16px; min-width: 8.5em; height: 100%; }
+.c .w { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.c .w small { font-size: 12px; font-weight: 400; color: var(--ink2); margin-left: 2px; }
+.c .v { font-size: 13px; color: var(--ink2); }
+.c .flag { font-size: 13px; color: var(--accent); font-weight: 600; }
+.c.weight { background: var(--f-weight); } .c.reps { background: var(--f-reps); } .c.same { background: var(--f-same); }
+.c.down { background: var(--f-down); } .c.watch, .c.unit { background: var(--f-warn); }
+.key { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--ink2); padding: 14px 16px; }
+.key span::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; background: var(--k); }
+h2 { font-size: 22px; letter-spacing: -0.01em; margin: 64px 0 6px; }
+.hist p { color: var(--ink2); margin: 0 0 16px; }
+.hist svg text { fill: var(--ink2); font: 12px var(--sans); }
+@media (max-width: 560px) { h1 { font-size: 30px; } .lede { font-size: 17px; } td.ex { min-width: 8em; max-width: 8em; } .c .w { font-size: 17px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>训练进步</h1>
+  <p class="lede" id="lede"></p>
+  <div class="meta" id="meta"></div>
+  <nav id="tabs" role="tablist"></nav>
+  <div class="sheet"><table id="t"></table>
+    <div class="key">
+      <span style="--k:var(--f-weight)">涨重量</span><span style="--k:var(--f-reps)">涨次数</span><span style="--k:var(--f-same)">持平</span>
+      <span style="--k:var(--f-down)">退步</span><span style="--k:var(--f-warn)">待观察</span><span style="--k:var(--sheet);outline:1px solid var(--rule)">首次 / 换动作</span>
+    </div>
+  </div>
+  <section class="hist"><h2 id="h2"></h2><p>每次这个位置的最佳组。点表格里的一行切换。</p><div id="chart"></div></section>
+</div>
+<script>/*__DATA__*/</script>
+<script>/*__COMMON__*/</script>
+<script>
+(() => {
+  const c = tally(last.moves), ups = (c.weight || 0) + (c.reps || 0), cmp = ups + (c.same || 0) + (c.down || 0) + (c.watch || 0);
+  const lede = $('lede');
+  lede.append(`${md(last.date)} 练了${last.template}。`);
+  const b = el('b', null, cmp ? `${cmp} 个能比的动作里 ${ups} 个进步了` : '这次没有能和上次比的动作'); lede.append(b, '。');
+  const adds = last.moves.filter(m => m.add_weight).map(m => m.name);
+  if (adds.length) lede.append(` 下次可以加重:${adds.join('、')}。`);
+  $('meta').textContent = `${D.summary.first_date} 至 ${D.summary.last_date},共 ${D.summary.days} 次训练`;
+
+  const plan = D.templates.filter(t => t.plan);
+  let tpl = plan.some(t => t.name === last.template) ? last.template : plan[0].name;
+  let pos = null;
+  for (const t of plan) {
+    const btn = el('button', null, t.name); btn.setAttribute('role', 'tab');
+    btn.onclick = () => { tpl = t.name; pos = null; draw(); }; $('tabs').append(btn);
+  }
+  function draw() {
+    [...$('tabs').children].forEach(b => b.setAttribute('aria-selected', b.textContent === tpl));
+    const sess = sessionsOf(tpl).slice(-6), slots = slotsOf(sess), T = $('t'); T.textContent = '';
+    const hr = el('tr'); hr.append(el('th', null, '动作'));
+    sess.forEach(d => hr.append(el('th', null, md(d.date)))); const th = el('thead'); th.append(hr); T.append(th);
+    const tb = el('tbody');
+    for (const [p, ref] of slots) {
+      const tr = el('tr'); tr.style.cursor = 'pointer'; tr.onclick = () => { pos = p; drawHist(); };
+      const ex = el('td', 'ex'); ex.append(el('div', 'p', `第 ${p} 个`), el('div', 'n', ref.name)); tr.append(ex);
+      for (const d of sess) {
+        const td = el('td'), m = d.moves.find(x => x.pos === p);
+        if (m) {
+          const c = el('div', 'c ' + m.verdict); const w = el('div', 'w', setTxt(m.best, m)); w.append(el('small', null, unitTxt(m)));
+          c.append(w, el('div', 'v', `${VL[m.verdict]} ${deltaTxt(m, prevOf(tpl, d.date, m))}`.trim()));
+          if (m.add_weight) c.append(el('div', 'flag', m.assist ? '可以减辅助' : '可以加重'));
+          if (m.stall) c.append(el('div', 'flag', '停滞'));
+          c.title = m.sets.map(s => setTxt(s, m)).join('  '); td.append(c);
+        }
+        tr.append(td);
+      }
+      tb.append(tr);
+    }
+    T.append(tb); pos = pos ?? slots[0][0]; drawHist();
+  }
+  function drawHist() {
+    const rows = sessionsOf(tpl).map(d => ({ d, m: d.moves.find(x => x.pos === pos) })).filter(r => r.m);
+    const m0 = rows[rows.length - 1].m;
+    $('h2').textContent = `${tpl} 第 ${pos} 个:${m0.name}`;
+    const box = $('chart'); box.textContent = '';
+    const W = Math.max(300, box.clientWidth), H = 200, L = 8, R = 8, T = 28, B = 28;
+    const ws = rows.map(r => wv(r.m.best[0], r.m.unit)), lo = Math.min(...ws), hi = Math.max(...ws), pad = (hi - lo) || hi * 0.1 || 1;
+    const x = (i) => rows.length === 1 ? W / 2 : L + 30 + i * (W - L - R - 60) / (rows.length - 1);
+    const y = (v) => T + (1 - (v - (lo - pad * 0.3)) / (pad * 1.6)) * (H - T - B);
+    const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', '100%');
+    const add = (tag, a, txt) => { const e = document.createElementNS(ns, tag); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.append(e); return e; };
+    add('polyline', { points: rows.map((r, i) => `${x(i)},${y(ws[i])}`).join(' '), fill: 'none', stroke: getComputedStyle(document.body).color, 'stroke-width': 2 });
+    rows.forEach((r, i) => {
+      add('circle', { cx: x(i), cy: y(ws[i]), r: 5, fill: `var(--f-${UP.includes(r.m.verdict) ? r.m.verdict : r.m.verdict === 'down' ? 'down' : 'same'})`, stroke: 'currentColor', 'stroke-width': 1.5 });
+      add('text', { x: x(i), y: y(ws[i]) - 12, 'text-anchor': 'middle' }, setTxt(r.m.best, r.m));
+      add('text', { x: x(i), y: H - 6, 'text-anchor': 'middle' }, md(r.d.date));
+    });
+    box.append(svg);
+  }
+  draw(); addEventListener('resize', drawHist);
+})();
+</script>
+</body>
+</html>

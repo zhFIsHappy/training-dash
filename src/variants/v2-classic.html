@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>哲昊的训练进步</title>
+<style>
+/* Layout: summary first, then the per-template grid (the main view), then weekly trend and one-lift history. */
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --fg: #1b1f24; --muted: #646d78; --line: #e1e4e9; --grid: #eceef1;
+  --accent: #2456c9; --bar: #c5ccd6; --tip: #ffffff;
+  --v-weight: #1a7f4b; --v-reps: #5fb37f; --v-same: #b4bcc7; --v-down: #c2362f; --v-warn: #c27a12;
+  --p1: #2456c9; --p2: #c9761a; --p3: #8a4fc7; --p4: #138a8a; --p5: #c2477f; --p6: #6b7480;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --num: "SF Pro Display", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121418; --panel: #1a1d22; --fg: #e8eaee; --muted: #98a1ad; --line: #2a2f36; --grid: #23272d;
+    --accent: #6f9bff; --bar: #3a414b; --tip: #22262c;
+    --v-weight: #3fbf7f; --v-reps: #2c7a52; --v-same: #4a525e; --v-down: #ff7b72; --v-warn: #f0b04a;
+    --p1: #6f9bff; --p2: #f0a64a; --p3: #b48cf2; --p4: #3fc1c1; --p5: #f07aae; --p6: #98a1ad; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121418; --panel: #1a1d22; --fg: #e8eaee; --muted: #98a1ad; --line: #2a2f36; --grid: #23272d;
+  --accent: #6f9bff; --bar: #3a414b; --tip: #22262c;
+  --v-weight: #3fbf7f; --v-reps: #2c7a52; --v-same: #4a525e; --v-down: #ff7b72; --v-warn: #f0b04a;
+    --p1: #6f9bff; --p2: #f0a64a; --p3: #b48cf2; --p4: #3fc1c1; --p5: #f07aae; --p6: #98a1ad; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px; }
+h1 { font-size: 26px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.take { margin: 6px 0 0; color: var(--muted); max-width: 70ch; }
+.meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+.tile .k { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.tile .v { font-family: var(--num); font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 4px; letter-spacing: -0.02em; }
+.tile .d { font-size: 12px; margin-top: 2px; color: var(--muted); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.grid2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+h2 { font-size: 15px; font-weight: 600; margin: 0; }
+.note { font-size: 12px; color: var(--muted); margin: 4px 0 12px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+select { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; max-width: 100%; }
+select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lg { display: inline-flex; align-items: center; gap: 6px; }
+.chart { position: relative; min-height: 240px; }
+.chart svg { display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-size: 11px; font-family: var(--sans); }
+.tip { position: absolute; background: var(--tip); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
+  padding: 6px 10px; font-size: 12px; pointer-events: none; white-space: nowrap; z-index: 2; font-variant-numeric: tabular-nums; }
+.tip .t { color: var(--muted); }
+.tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.tbox { overflow: auto; max-height: 34rem; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 500; color: var(--muted); font-size: 12px;
+  padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; z-index: 1; }
+td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.ex { min-width: 9em; }
+#grid th:first-child, #grid td.ex { position: sticky; left: 0; background: var(--panel); z-index: 1; }
+#grid th:first-child { z-index: 2; }
+@media (max-width: 560px) { #grid td.ex { min-width: 7em; max-width: 7em; } }
+td.ex .pos { color: var(--muted); margin-right: 6px; }
+td.ex .rm { display: block; font-size: 11px; color: var(--muted); }
+.cell { display: grid; gap: 2px; min-width: 6.5em; white-space: nowrap; }
+.cell .b { font-weight: 500; } .u { font-size: 10px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+.cell .v { font-size: 11px; display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.cell .s { font-size: 11px; color: var(--muted); }
+.cell.cur { padding-left: 8px; border-left: 3px solid var(--accent); }
+.tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; line-height: 18px; margin-top: 2px; width: max-content; }
+.tag.add { color: var(--v-weight); } .tag.stall { color: var(--v-warn); }
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.list li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.list .t { color: var(--muted); font-size: 12px; }
+.empty { color: var(--muted); font-size: 13px; }
+.hist td { white-space: nowrap; } .hist td.sets { white-space: normal; color: var(--muted); }
+@media (max-width: 560px) { h1 { font-size: 22px; } .tile .v { font-size: 26px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>训练进步</h1>
+    <p class="take" id="take"></p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>可以加重了</h2>
+      <p class="note">最近一次:最佳组超过计划的 RM 次数,或者有两组做满。按计划,下次这个位置加一档重量(辅助器械是减一档辅助)。</p>
+      <ul class="list" id="add-list"></ul>
+    </div>
+    <div class="card">
+      <h2>停滞的动作</h2>
+      <p class="note">同一模板同一位置,连续 3 次没有涨重量也没有涨次数。</p>
+      <ul class="list" id="stall-list"></ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 id="tpl-title">按模板看</h2>
+    <p class="note">每行是模板里的一个位置,每列是一次训练。格子里是最佳组(最重的一组,同重量看次数,热身组不算),颜色是和上一次同位置相比的结果。用 kg 记的动作按 kg 显示(标 kg),其余是磅;比较时统一换成磅。名字带"辅助"的器械记的是辅助重量,越轻越好:最佳组取最轻的一组,减辅助算 ↑重量。↑重量(1 组)= 只有 1 组用了新重量。</p>
+    <div class="ctl"><label for="tpl">模板</label><select id="tpl"></select><span id="legend" class="ctl" style="margin:0"></span></div>
+    <div class="tbox"><table id="grid"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>每周进步情况</h2>
+    <p class="note">每周所有动作的判定次数。首次练和换动作不算在内。</p>
+    <div class="chart" id="week-chart"></div>
+  </section>
+
+  <section class="card" id="lift-card">
+    <h2 id="lift-title">单个动作历史</h2>
+    <p class="note">最佳组重量,点旁边的数字是次数。同一个动作排在第几个做,疲劳程度不同,所以按位置分开画:只有同一位置的点才连成线。下面是每次的全部组。</p>
+    <div class="ctl"><label for="pick">动作</label><select id="pick"></select><label for="ppos">位置</label><select id="ppos"></select><span id="plg" class="ctl" style="margin:0"></span></div>
+    <div class="chart" id="lift-chart"></div>
+    <div class="tbox" style="max-height:22rem;margin-top:12px"><table class="hist" id="hist"></table></div>
+  </section>
+</div>
+<script>/*__D3__*/</script>
+<script>/*__DATA__*/</script>
+<script>
+(() => {
+  const D = window.DASH;
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const parse = d3.utcParse('%Y-%m-%d'), md = d3.utcFormat('%-m/%-d');
+  // weights arrive in lbs; u = display unit ('kg' moves: back to kg, 0.5 kg steps). a = assisted machine (weight = assistance)
+  const KG = 2.20462;
+  const wv = (w, u) => u === 'kg' ? Math.round(w / KG * 2) / 2 : Math.round(w * 10) / 10;
+  const setTxt = (s, u, a) => (s[0] > 0 ? `${a ? '辅助 ' : ''}${wv(s[0], u)}×${s[1]}` : `自重×${s[1]}`);
+  const kgT = (u) => u === 'kg' ? ' kg' : '';
+  const bestTxt = (m, u = m.unit) => setTxt(m.best, u, m.assist) + kgT(u);
+  const setsTxt = (m, u = m.unit, f = () => '') => (m.assist ? '辅助 ' : '') + m.sets.map(s => setTxt(s, u) + f(s)).join(', ') + kgT(u);
+  const nWork = (m) => m.sets.filter(s => s[2] !== '热').length || m.sets.length;
+  const vLabel = (m) => V[m.verdict][0] + (m.verdict === 'weight' && m.new_weight_sets < nWork(m) ? `(${m.new_weight_sets} 组)` : '');  // partial ↑重量
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+  // verdict vocabulary; ↑ kinds are progress
+  const V = {
+    weight: ['↑重量', '--v-weight'], reps: ['↑次数', '--v-reps'], same: ['持平', '--v-same'], down: ['退步', '--v-down'],
+    watch: ['待观察', '--v-warn'], unit: ['单位?', '--v-warn'], first: ['首次', null], swap: ['换动作', null],
+  };
+  const COMPARE = ['weight', 'reps', 'same', 'down'];
+  const dot = (k) => { const s = el('span', 'dot'); const c = V[k][1]; s.style.background = c ? `var(${c})` : 'transparent'; if (!c) s.style.border = '1px solid var(--muted)'; return s; };
+
+  // header + tiles: latest session
+  const last = D.days[D.days.length - 1];
+  const cnt = d3.rollup(last.moves, v => v.length, m => m.verdict);
+  const comparable = COMPARE.concat('watch').reduce((a, k) => a + (cnt.get(k) || 0), 0);
+  const ups = (cnt.get('weight') || 0) + (cnt.get('reps') || 0);
+  $('take').textContent = comparable
+    ? `最近一次 ${last.date}(${last.template}):${comparable} 个能和上次比的动作里,${ups} 个进步了(${cnt.get('weight') || 0} 个涨重量,${cnt.get('reps') || 0} 个涨次数)。`
+    : `最近一次 ${last.date}(${last.template})没有能和上次比的动作。`;
+  $('meta').textContent = `数据 ${D.summary.first_date} 至 ${D.summary.last_date} · ${D.summary.days} 次训练 · 更新于 ${new Date(D.generated_at).toLocaleString('zh-CN', { hour12: false })}`;
+  const tile = (k, label, value, sub) => {
+    const t = el('div', 'card tile'); const kk = el('div', 'k'); if (k) kk.append(dot(k)); kk.append(label);
+    t.append(kk, el('div', 'v', value), el('div', 'd', sub)); $('tiles').append(t);
+  };
+  tile(null, '最近一次', last.template, last.date);
+  for (const k of COMPARE) tile(k, V[k][0], String(cnt.get(k) || 0), `共 ${last.moves.length} 个动作`);
+  const other = last.moves.length - comparable;
+  if (other) $('tiles').lastChild.querySelector('.d').textContent = `另有 ${other} 个首次或换了动作`;
+
+  // add-weight + stall lists
+  const addL = $('add-list');
+  const adds = last.moves.filter(m => m.add_weight);
+  if (!adds.length) addL.append(el('li', 'empty', '最近一次没有'));
+  for (const m of adds) { const li = el('li'); li.append(el('span', null, `${m.pos}. ${m.name}`), el('span', 't', `${setsTxt(m)} · 计划 ${m.rm}RM${m.assist ? ' · 可减辅助' : ''}`)); addL.append(li); }
+  const stL = $('stall-list');
+  if (!D.stalls.length) stL.append(el('li', 'empty', '没有'));
+  for (const s of D.stalls) { const li = el('li'); li.append(el('span', null, `${s.template} · ${s.pos}. ${s.name}`), el('span', 't', `最近 ${s.date}`)); stL.append(li); }
+
+  // template grid
+  const tplSel = $('tpl');
+  for (const t of D.templates) { const o = el('option', null, `${t.name}(${t.sessions} 次${t.plan ? '' : ' · 旧计划'})`); o.value = t.name; tplSel.append(o); }
+  let tpl = D.templates.some(t => t.name === last.template) ? last.template : D.templates[0].name;
+  const savedT = store.get('tpl'); if (savedT && D.templates.some(t => t.name === savedT)) tpl = savedT;
+  tplSel.value = tpl;
+  for (const k of Object.keys(V)) { const s = el('span', 'lg'); s.append(dot(k), V[k][0]); $('legend').append(s); }
+
+  function drawGrid() {
+    $('tpl-title').textContent = `按模板看 · ${tpl}`;
+    const tb = $('grid'); tb.textContent = '';
+    const sess = D.days.filter(d => d.template === tpl).slice(-8);
+    const slots = new Map();  // pos -> latest name, rm
+    for (const d of sess) for (const m of d.moves) slots.set(m.pos, m);
+    const head = el('tr'); head.append(el('th', null, '位置 · 动作'));
+    sess.forEach(d => head.append(el('th', null, md(parse(d.date)))));
+    const thead = el('thead'); thead.append(head); tb.append(thead);
+    const body = el('tbody');
+    for (const [pos, ref] of [...slots].sort((a, b) => a[0] - b[0])) {
+      const tr = el('tr'); const ex = el('td', 'ex');
+      ex.append(el('span', 'pos', pos), ref.name); if (ref.rm) ex.append(el('span', 'rm', `计划 ${ref.rm}RM`));
+      tr.append(ex);
+      sess.forEach((d, i) => {
+        const td = el('td'); const m = d.moves.find(x => x.pos === pos);
+        if (m) {
+          const c = el('div', 'cell' + (i === sess.length - 1 ? ' cur' : ''));
+          const b = el('span', 'b', setTxt(m.best, m.unit, m.assist)); if (m.unit === 'kg') b.append(el('span', 'u', 'kg')); c.append(b);
+          const v = el('span', 'v'); v.append(dot(m.verdict), vLabel(m)); c.append(v);
+          if (m.name !== ref.name) c.append(el('span', 's', m.name));
+          if (m.detail && (m.prev_pos || !['first', 'same'].includes(m.verdict))) c.append(el('span', 's', m.detail));
+          if (m.add_weight) c.append(el('span', 'tag add', m.assist ? '可减辅助' : '可加重'));
+          if (m.stall) c.append(el('span', 'tag stall', '停滞'));
+          c.title = setsTxt(m, m.unit, s => (s[2] ? `(${s[2]})` : ''));
+          td.append(c);
+        }
+        tr.append(td);
+      });
+      body.append(tr);
+    }
+    tb.append(body);
+    const box = tb.parentElement; box.scrollLeft = box.scrollWidth;  // newest column in view on phones
+  }
+  tplSel.addEventListener('change', () => { tpl = tplSel.value; store.set('tpl', tpl); drawGrid(); });
+
+  // shared chart helpers
+  const tipIn = (box) => { let t = box.querySelector('.tip'); if (!t) { t = el('div', 'tip'); t.hidden = true; box.appendChild(t); } return t; };
+  const tipFill = (tip, head, lines) => {
+    tip.textContent = ''; tip.append(el('div', 't', head));
+    for (const [c, txt] of lines) { const r = el('div'); if (c) { const s = el('span', 'sw'); s.style.background = c; r.append(s); } r.append(txt); tip.append(r); }
+  };
+  const tipAt = (tip, box, x, y) => { tip.hidden = false; tip.style.left = Math.max(0, Math.min(box.clientWidth - tip.offsetWidth, x - tip.offsetWidth / 2)) + 'px'; tip.style.top = Math.max(0, y - tip.offsetHeight - 10) + 'px'; };
+  const clean = (g) => g.attr('font-size', null).attr('font-family', null)
+    .call(a => a.selectAll('line').attr('stroke', css('--grid'))).call(a => a.select('.domain').remove());
+  const textW = (svg, labels) => { const t = svg.append('text'); let m = 0; for (const l of labels) { t.text(l); m = Math.max(m, t.node().getComputedTextLength()); } t.remove(); return Math.ceil(m) + 10; };
+
+  // weekly verdict stacks
+  function drawWeeks() {
+    const box = $('week-chart'); box.textContent = '';
+    const rows = D.weekly.filter(w => COMPARE.some(k => w[k]));
+    if (!rows.length) { box.append(el('p', 'empty', '还没有能比较的训练')); return; }
+    const W = Math.max(280, box.clientWidth), H = 240, B = 24;
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const stack = d3.stack().keys(COMPARE).value((r, k) => r[k] || 0)(rows);
+    const y = d3.scaleLinear([0, d3.max(stack.at(-1), s => s[1])], [H - B, 8]).nice();
+    const ticks = y.ticks(4).filter(Number.isInteger), L = textW(svg, ticks.map(String)), R = 4;
+    const x = d3.scaleBand(rows.map(r => r.week), [L, W - R]).padding(0.25);
+    svg.append('g').attr('transform', `translate(${L},0)`).call(d3.axisLeft(y).tickValues(ticks).tickFormat(String).tickSize(-(W - L - R))).call(clean);
+    const every = Math.max(1, Math.ceil(rows.length / Math.max(2, Math.floor((W - L) / 56))));
+    svg.append('g').attr('transform', `translate(0,${H - B})`).call(d3.axisBottom(x).tickValues(rows.map(r => r.week).filter((_, i) => i % every === 0)).tickFormat(w => md(parse(w))).tickSize(0).tickPadding(8)).call(clean);
+    const bw = Math.min(32, x.bandwidth());
+    for (const layer of stack) {
+      svg.append('g').attr('fill', css(V[layer.key][1])).selectAll('rect').data(layer).join('rect')
+        .attr('x', s => x(s.data.week) + (x.bandwidth() - bw) / 2).attr('width', bw)
+        .attr('y', s => y(s[1])).attr('height', s => Math.max(0, y(s[0]) - y(s[1]) - (s[1] > s[0] ? 1 : 0)));
+    }
+    const tip = tipIn(box), k = () => box.clientWidth / W;
+    svg.append('g').selectAll('rect').data(rows).join('rect').attr('x', r => x(r.week)).attr('width', x.bandwidth()).attr('y', 0).attr('height', H - B).attr('fill', 'transparent')
+      .on('pointerenter', (ev, r) => {
+        const tot = COMPARE.reduce((a, kk) => a + (r[kk] || 0), 0);
+        tipFill(tip, `${r.week} 这周 · ${tot} 个`, COMPARE.map(kk => [css(V[kk][1]), `${V[kk][0]} ${r[kk] || 0}`]));
+        tipAt(tip, box, (x(r.week) + x.bandwidth() / 2) * k(), y(tot) * k());
+      })
+      .on('pointerleave', () => { tip.hidden = true; });
+  }
+
+  // one-lift history
+  const pick = $('pick');
+  const byName = d3.groups(D.days.flatMap(d => d.moves.map(m => ({ ...m, date: d.date, template: d.template }))), m => m.name)
+    .map(([n, list]) => [n, list, new Set(list.map(m => m.date)).size])  // sessions, not slots: a lift done twice in one day counts once
+    .sort((a, b) => b[2] - a[2]);
+  for (const [n, , days] of byName) { const o = el('option', null, `${n}(练过 ${days} 次)`); o.value = n; pick.append(o); }
+  let chosen = byName[0][0];
+  const lastNames = last.moves.map(m => m.name); if (byName.some(([n]) => n === lastNames[0])) chosen = lastNames[0];
+  const savedL = store.get('lift2'); if (savedL && byName.some(([n]) => n === savedL)) chosen = savedL;
+  pick.value = chosen;
+
+  const posSel = $('ppos');
+  let ppos = 'auto';  // 'auto' = position of the latest time this lift was done; 'all'; or a number
+  const pcol = (p) => css(`--p${Math.min(p, 6)}`);
+  function fillPos(rows) {
+    posSel.textContent = '';
+    const latest = rows[rows.length - 1].pos;
+    const counts = d3.rollup(rows, v => v.length, r => r.pos);
+    for (const p of [...counts.keys()].sort((a, b) => a - b)) {
+      const o = el('option', null, `第 ${p} 个动作(${counts.get(p)} 次)${p === latest ? ' · 最近' : ''}`); o.value = p; posSel.append(o);
+    }
+    if (counts.size > 1) { const o = el('option', null, '全部位置(分开画)'); o.value = 'all'; posSel.append(o); }
+    if (ppos === 'auto' || (ppos !== 'all' && !counts.has(+ppos)) || (ppos === 'all' && counts.size < 2)) ppos = String(latest);
+    posSel.value = ppos;
+  }
+
+  function drawLift() {
+    const all = byName.find(([n]) => n === chosen)[1].map(m => ({ ...m, d: parse(m.date) }));
+    fillPos(all);
+    const rows = ppos === 'all' ? all : all.filter(r => r.pos === +ppos);
+    const cu = rows.every(r => r.unit === 'kg') ? 'kg' : 'lbs', cuT = cu === 'kg' ? 'kg' : '磅';  // chart unit: kg only if every shown row is kg
+    const yv = (r) => wv(r.best[0], cu);
+    $('lift-title').textContent = (ppos === 'all' ? `${chosen} 历史 · 全部位置` : `${chosen} 历史 · 第 ${ppos} 个动作`) + ` · 单位 ${cuT}` + (rows[0].assist ? ' · 辅助重量,越低越好' : '');
+    const lines = d3.groups(rows, r => r.pos).sort((a, b) => a[0] - b[0]);
+    const lg = $('plg'); lg.textContent = '';
+    if (ppos === 'all') for (const [p] of lines) { const s = el('span', 'lg'); const i = el('span', 'dot'); i.style.background = pcol(p); s.append(i, `第 ${p} 个`); lg.append(s); }
+
+    const box = $('lift-chart'); box.textContent = '';
+    const W = Math.max(280, box.clientWidth), H = 240, B = 24;
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const ws = rows.map(yv);
+    const lo = d3.min(ws), hi = d3.max(ws);
+    const y = d3.scaleLinear([lo === hi ? lo * 0.8 : lo - (hi - lo) * 0.25, hi === 0 ? 1 : hi + (hi - lo || hi) * 0.2], [H - B, 18]).nice();
+    const ticks = y.ticks(5), L = textW(svg, ticks.map(String)), R = 18;
+    const ext = d3.extent(rows, r => r.d);
+    const x = d3.scaleUtc(ext[0] - ext[1] ? ext : [d3.utcDay.offset(ext[0], -3), d3.utcDay.offset(ext[0], 3)], [L, W - R]);
+    svg.append('g').attr('transform', `translate(${L},0)`).call(d3.axisLeft(y).tickValues(ticks).tickSize(-(W - L - R))).call(clean);
+    svg.append('g').attr('transform', `translate(0,${H - B})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.min(6, Math.floor((W - L) / 70)))).tickFormat(md).tickSize(0).tickPadding(8)).call(clean);
+    // one position: verdict-coloured points on the accent line; all positions: one colour per position
+    const stroke = (r) => ppos === 'all' ? pcol(r.pos) : css('--accent');
+    const fill = (r) => ppos === 'all' ? pcol(r.pos) : (V[r.verdict][1] ? css(V[r.verdict][1]) : css('--panel'));
+    for (const [, pts] of lines) {
+      svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', stroke(pts[0])).attr('stroke-width', 2).attr('stroke-linejoin', 'round')
+        .attr('d', d3.line(r => x(r.d), r => y(yv(r))));
+    }
+    svg.append('g').selectAll('circle').data(rows).join('circle').attr('cx', r => x(r.d)).attr('cy', r => y(yv(r))).attr('r', 4.5)
+      .attr('fill', fill).attr('stroke', stroke).attr('stroke-width', 1.5);
+    if (rows.length <= 24) svg.append('g').selectAll('text').data(rows).join('text').attr('x', r => x(r.d)).attr('y', r => y(yv(r)) - 9).attr('text-anchor', 'middle').text(r => r.best[1]);
+    const tip = tipIn(box), k = () => box.clientWidth / W;
+    svg.append('rect').attr('x', L).attr('width', W - L - R).attr('height', H).attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const [mx, my] = d3.pointer(ev); const r = rows[d3.leastIndex(rows, r => Math.hypot(x(r.d) - mx, (y(yv(r)) - my) / 3))];
+        tipFill(tip, `${r.date} · ${r.template} · 第 ${r.pos} 个`, [[fill(r), `最佳 ${bestTxt(r, cu)} · ${vLabel(r)}`], [null, setsTxt(r, cu)]]);
+        tipAt(tip, box, x(r.d) * k(), y(yv(r)) * k());
+      })
+      .on('pointerleave', () => { tip.hidden = true; });
+
+    const tb = $('hist'); tb.textContent = '';
+    const head = el('tr'); for (const h of ['日期', '模板', '第几个', `最佳组(${cuT})`, '判定', `全部组(${cuT}×次)`]) head.append(el('th', null, h));
+    const thead = el('thead'); thead.append(head); tb.append(thead);
+    const body = el('tbody');
+    for (const r of [...rows].reverse()) {
+      const tr = el('tr'); const vd = el('td'); const v = el('span', 'lg'); v.append(dot(r.verdict), vLabel(r)); vd.append(v);
+      tr.append(el('td', null, r.date), el('td', null, r.template), el('td', null, `第 ${r.pos} 个`), el('td', null, setTxt(r.best, cu, r.assist)), vd,
+        el('td', 'sets', (r.assist ? '辅助 ' : '') + r.sets.map(s => setTxt(s, cu) + (s[2] === '热' ? '(热身)' : '')).join(', ')));
+      body.append(tr);
+    }
+    tb.append(body);
+  }
+  posSel.addEventListener('change', () => { ppos = posSel.value; drawLift(); });
+  pick.addEventListener('change', () => { chosen = pick.value; ppos = 'auto'; store.set('lift2', chosen); drawLift(); });
+
+  const drawCharts = () => { drawWeeks(); drawLift(); };
+  drawGrid(); drawCharts();
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawCharts, 120); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawCharts);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# Daily at 7pm Los Angeles: fetch 训记, rebuild, deploy. Also runs when the iPhone Shortcut sends Apple Health
+# (repository_dispatch "health") and on manual dispatch.
+name: daily
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 19:00 PDT
+    - cron: '0 3 * * *'   # 19:00 PST
+  repository_dispatch:
+    types: [health]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only the cron that is 7pm in Los Angeles today (by which cron fired, so a late start still runs)
+        id: gate
+        run: |
+          want='0 3 * * *'; [ "$(TZ=America/Los_Angeles date +%z)" = "-0700" ] && want='0 2 * * *'
+          if [ "${{ github.event_name }}" != "schedule" ] || [ "${{ github.event.schedule }}" = "$want" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.go
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.go
+        with:
+          python-version: '3.12'
+      - run: pip install cos-python-sdk-v5 cryptography
+        if: steps.gate.outputs.go
+      - name: Merge Apple Health
+        if: steps.gate.outputs.go && github.event_name == 'repository_dispatch'
+        env:
+          HEALTH_STORE_KEY: ${{ secrets.HEALTH_STORE_KEY }}
+        run: python health_merge.py
+      - name: Fetch 训记
+        if: steps.gate.outputs.go && github.event_name != 'repository_dispatch'
+        env:
+          XUNJI_API_KEY: ${{ secrets.XUNJI_API_KEY }}
+        run: python fetch.py
+      - run: python build.py
+        if: steps.gate.outputs.go
+        env:
+          HEALTH_KEY: ${{ secrets.HEALTH_KEY }}
+          HEALTH_STORE_KEY: ${{ secrets.HEALTH_STORE_KEY }}
+      - name: Deploy
+        if: steps.gate.outputs.go
+        env:
+          TENCENT_SECRET_ID: ${{ secrets.TENCENT_SECRET_ID }}
+          TENCENT_SECRET_KEY: ${{ secrets.TENCENT_SECRET_KEY }}
+        run: python deploy.py
+      - name: Commit data
+        if: steps.gate.outputs.go
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || { git commit -m "data: $(TZ=America/Los_Angeles date +%F) ${{ github.event_name }}"; git pull --rebase; git push; }
